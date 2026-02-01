@@ -36,7 +36,8 @@ import { USER_ROLES } from '../utils/Constant';
 
 const DRAWER_WIDTH = 240;
 
-const DashboardLayout = () => {
+// ✅ FIXED — was DashboardLayout, now DashBoardLayout
+const DashBoardLayout = () => {
   
   
   const navigate = useNavigate();
@@ -244,4 +245,5 @@ const DashboardLayout = () => {
   );
 };
 
-export default DashboardLayout;
+// ✅ FIXED — was DashboardLayout, now DashBoardLayout
+export default DashBoardLayout;

@@ -22,7 +22,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
 } from '@mui/material';
 import {
   CalendarToday as CalendarIcon,
@@ -30,6 +29,7 @@ import {
   Assignment as AssignmentIcon,
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
+
 import {
   fetchAppointmentsByDoctor,
   fetchPatients,
@@ -40,6 +40,9 @@ import {
 } from '../../redux/appointmentSlice';
 import { useAuth } from '../../hooks/useAuth';
 
+/**
+ * Reusable card for dashboard statistics
+ */
 const StatCard = ({ title, value, icon, color }) => (
   <Card>
     <CardContent>
@@ -48,7 +51,7 @@ const StatCard = ({ title, value, icon, color }) => (
           <Typography color="text.secondary" variant="overline">
             {title}
           </Typography>
-          <Typography variant="h4">{value}</Typography>
+          <Typography variant="h4">{value ?? 0}</Typography>
         </Box>
         <Box
           sx={{
@@ -65,17 +68,24 @@ const StatCard = ({ title, value, icon, color }) => (
   </Card>
 );
 
-const DoctorDashboard = () => {
+/**
+ * Doctor Dashboard Component
+ */
+const DoctorDashBoard = () => {
   const dispatch = useDispatch();
   const { user } = useAuth();
+
+  // Redux state
   const appointments = useSelector(selectAppointments);
   const patients = useSelector(selectPatients);
   const loading = useSelector(selectAppointmentsLoading);
 
+  // Local state
   const [tabValue, setTabValue] = useState(0);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
 
+  // Fetch appointments and patients on component mount
   useEffect(() => {
     if (user?.userId) {
       dispatch(fetchAppointmentsByDoctor(user.userId));
@@ -83,12 +93,10 @@ const DoctorDashboard = () => {
     }
   }, [dispatch, user]);
 
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-  };
+  const handleTabChange = (event, newValue) => setTabValue(newValue);
 
   const handleViewDetails = (appointment) => {
-    setSelectedAppointment(appointment);
+    setSelectedAppointment(appointment ?? null);
     setOpenDetailsDialog(true);
   };
 
@@ -97,13 +105,27 @@ const DoctorDashboard = () => {
     setSelectedAppointment(null);
   };
 
-  const handleStatusUpdate = async (appointmentId, status) => {
-    await dispatch(updateAppointmentStatus({ id: appointmentId, status }));
-    if (user?.userId) {
-      dispatch(fetchAppointmentsByDoctor(user.userId));
+  /**
+   * Optimistic status update — updates local state without refetching all appointments
+   */
+  const handleStatusUpdate = (appointmentId, status) => {
+    if (!appointmentId || !status) return;
+
+    // Update Redux state
+    dispatch(updateAppointmentStatus({ id: appointmentId, status }));
+
+    // Update selectedAppointment if it's currently open
+    if (selectedAppointment?.id === appointmentId) {
+      setSelectedAppointment({
+        ...selectedAppointment,
+        status,
+      });
     }
   };
 
+  /**
+   * Map appointment status to MUI Chip color
+   */
   const getAppointmentStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'scheduled':
@@ -119,12 +141,19 @@ const DoctorDashboard = () => {
     }
   };
 
+  /**
+   * Filter today's appointments safely
+   */
   const getTodayAppointments = () => {
+    if (!Array.isArray(appointments)) return [];
     const today = new Date().toDateString();
     return appointments.filter(
-      (apt) => new Date(apt.date).toDateString() === today
+      (apt) => apt?.date && new Date(apt.date).toDateString() === today
     );
   };
+
+  const safeAppointments = Array.isArray(appointments) ? appointments : [];
+  const safePatients = Array.isArray(patients) ? patients : [];
 
   return (
     <Box>
@@ -132,7 +161,7 @@ const DoctorDashboard = () => {
         Doctor Dashboard
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Welcome, Dr. {user?.username}! Manage your appointments and patients.
+        Welcome, Dr. {user?.username ?? 'Doctor'}! Manage your appointments and patients.
       </Typography>
 
       {/* Statistics Cards */}
@@ -148,7 +177,7 @@ const DoctorDashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Total Appointments"
-            value={appointments.length}
+            value={safeAppointments.length}
             icon={<AssignmentIcon sx={{ color: 'white' }} />}
             color="success"
           />
@@ -156,7 +185,7 @@ const DoctorDashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Total Patients"
-            value={patients.length}
+            value={safePatients.length}
             icon={<PeopleIcon sx={{ color: 'white' }} />}
             color="info"
           />
@@ -164,9 +193,7 @@ const DoctorDashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Completed Today"
-            value={
-              getTodayAppointments().filter((a) => a.status === 'completed').length
-            }
+            value={getTodayAppointments().filter((a) => a?.status === 'completed').length}
             icon={<CheckCircleIcon sx={{ color: 'white' }} />}
             color="warning"
           />
@@ -188,7 +215,6 @@ const DoctorDashboard = () => {
           <Typography variant="h6" gutterBottom>
             Today's Schedule
           </Typography>
-
           <TableContainer>
             <Table>
               <TableHead>
@@ -214,15 +240,15 @@ const DoctorDashboard = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  getTodayAppointments().map((appointment) => (
-                    <TableRow key={appointment.id}>
-                      <TableCell>{appointment.time || 'N/A'}</TableCell>
-                      <TableCell>{appointment.patientName || 'N/A'}</TableCell>
-                      <TableCell>{appointment.reason || 'General checkup'}</TableCell>
+                  getTodayAppointments().map((appointment, index) => (
+                    <TableRow key={appointment?.id ?? index}>
+                      <TableCell>{appointment?.time ?? 'N/A'}</TableCell>
+                      <TableCell>{appointment?.patientName ?? 'N/A'}</TableCell>
+                      <TableCell>{appointment?.reason ?? 'General checkup'}</TableCell>
                       <TableCell>
                         <Chip
-                          label={appointment.status || 'Scheduled'}
-                          color={getAppointmentStatusColor(appointment.status)}
+                          label={appointment?.status ?? 'Scheduled'}
+                          color={getAppointmentStatusColor(appointment?.status)}
                           size="small"
                         />
                       </TableCell>
@@ -235,12 +261,12 @@ const DoctorDashboard = () => {
                         >
                           Details
                         </Button>
-                        {appointment.status !== 'completed' && (
+                        {appointment?.status !== 'completed' && (
                           <Button
                             size="small"
                             variant="contained"
                             onClick={() =>
-                              handleStatusUpdate(appointment.id, 'completed')
+                              handleStatusUpdate(appointment?.id, 'completed')
                             }
                           >
                             Complete
@@ -262,7 +288,6 @@ const DoctorDashboard = () => {
           <Typography variant="h6" gutterBottom>
             All Appointments
           </Typography>
-
           <TableContainer>
             <Table>
               <TableHead>
@@ -282,27 +307,27 @@ const DoctorDashboard = () => {
                       Loading...
                     </TableCell>
                   </TableRow>
-                ) : appointments.length === 0 ? (
+                ) : safeAppointments.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} align="center">
                       No appointments found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  appointments.map((appointment) => (
-                    <TableRow key={appointment.id}>
+                  safeAppointments.map((appointment, index) => (
+                    <TableRow key={appointment?.id ?? index}>
                       <TableCell>
-                        {appointment.date
+                        {appointment?.date
                           ? new Date(appointment.date).toLocaleDateString()
                           : 'N/A'}
                       </TableCell>
-                      <TableCell>{appointment.time || 'N/A'}</TableCell>
-                      <TableCell>{appointment.patientName || 'N/A'}</TableCell>
-                      <TableCell>{appointment.reason || 'General checkup'}</TableCell>
+                      <TableCell>{appointment?.time ?? 'N/A'}</TableCell>
+                      <TableCell>{appointment?.patientName ?? 'N/A'}</TableCell>
+                      <TableCell>{appointment?.reason ?? 'General checkup'}</TableCell>
                       <TableCell>
                         <Chip
-                          label={appointment.status || 'Scheduled'}
-                          color={getAppointmentStatusColor(appointment.status)}
+                          label={appointment?.status ?? 'Scheduled'}
+                          color={getAppointmentStatusColor(appointment?.status)}
                           size="small"
                         />
                       </TableCell>
@@ -330,7 +355,6 @@ const DoctorDashboard = () => {
           <Typography variant="h6" gutterBottom>
             My Patients
           </Typography>
-
           <TableContainer>
             <Table>
               <TableHead>
@@ -351,22 +375,22 @@ const DoctorDashboard = () => {
                       Loading...
                     </TableCell>
                   </TableRow>
-                ) : patients.length === 0 ? (
+                ) : safePatients.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} align="center">
                       No patients found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  patients.map((patient) => (
-                    <TableRow key={patient.id}>
-                      <TableCell>#{patient.id}</TableCell>
-                      <TableCell>{patient.name || 'N/A'}</TableCell>
-                      <TableCell>{patient.age || 'N/A'}</TableCell>
-                      <TableCell>{patient.gender || 'N/A'}</TableCell>
-                      <TableCell>{patient.phone || 'N/A'}</TableCell>
+                  safePatients.map((patient, index) => (
+                    <TableRow key={patient?.id ?? index}>
+                      <TableCell>#{patient?.id ?? 'N/A'}</TableCell>
+                      <TableCell>{patient?.name ?? 'N/A'}</TableCell>
+                      <TableCell>{patient?.age ?? 'N/A'}</TableCell>
+                      <TableCell>{patient?.gender ?? 'N/A'}</TableCell>
+                      <TableCell>{patient?.phone ?? 'N/A'}</TableCell>
                       <TableCell>
-                        {patient.lastVisit
+                        {patient?.lastVisit
                           ? new Date(patient.lastVisit).toLocaleDateString()
                           : 'N/A'}
                       </TableCell>
@@ -393,33 +417,34 @@ const DoctorDashboard = () => {
       >
         <DialogTitle>Appointment Details</DialogTitle>
         <DialogContent>
-          {selectedAppointment && (
+          {selectedAppointment ? (
             <Box sx={{ pt: 2 }}>
               <Typography variant="body1">
-                <strong>Patient:</strong> {selectedAppointment.patientName || 'N/A'}
+                <strong>Patient:</strong> {selectedAppointment?.patientName ?? 'N/A'}
               </Typography>
               <Typography variant="body1" sx={{ mt: 1 }}>
                 <strong>Date:</strong>{' '}
-                {selectedAppointment.date
+                {selectedAppointment?.date
                   ? new Date(selectedAppointment.date).toLocaleDateString()
                   : 'N/A'}
               </Typography>
               <Typography variant="body1" sx={{ mt: 1 }}>
-                <strong>Time:</strong> {selectedAppointment.time || 'N/A'}
+                <strong>Time:</strong> {selectedAppointment?.time ?? 'N/A'}
               </Typography>
               <Typography variant="body1" sx={{ mt: 1 }}>
-                <strong>Reason:</strong>{' '}
-                {selectedAppointment.reason || 'General checkup'}
+                <strong>Reason:</strong> {selectedAppointment?.reason ?? 'General checkup'}
               </Typography>
               <Typography variant="body1" sx={{ mt: 1 }}>
                 <strong>Status:</strong>{' '}
                 <Chip
-                  label={selectedAppointment.status || 'Scheduled'}
-                  color={getAppointmentStatusColor(selectedAppointment.status)}
+                  label={selectedAppointment?.status ?? 'Scheduled'}
+                  color={getAppointmentStatusColor(selectedAppointment?.status)}
                   size="small"
                 />
               </Typography>
             </Box>
+          ) : (
+            <Typography>No appointment selected.</Typography>
           )}
         </DialogContent>
         <DialogActions>
@@ -428,7 +453,6 @@ const DoctorDashboard = () => {
             variant="contained"
             onClick={() => {
               handleCloseDetails();
-              // Prescription feature can be added later
               alert('Prescription feature coming soon!');
             }}
           >
@@ -440,4 +464,4 @@ const DoctorDashboard = () => {
   );
 };
 
-export default DoctorDashboard;
+export default DoctorDashBoard;

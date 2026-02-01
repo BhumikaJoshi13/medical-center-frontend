@@ -3,18 +3,18 @@ import { useAuth } from '../hooks/useAuth';
 
 // Layouts
 import AuthLayout from '../layouts/AuthLayout';
-import DashboardLayout from '../layouts/DashboardLayout';
+import DashBoardLayout from '../layouts/DashBoardLayout';
 
 // Auth Pages
 import Login from '../pages/auth-temp/Login';
 import Register from '../pages/auth-temp/Register';
 
 // Dashboard Pages
-import AdminDashboard from '../pages/DashBoard/AdminDashBoard';
-import DoctorDashboard from '../pages/Dashboard/DoctorDashboard';
-//import PharmacistDashboard from '../pages/Dashboard/PharmacistDashboard';
-//import ReceptionistDashboard from '../pages/Dashboard/ReceptionistDashboard';
-//import PatientDashboard from '../pages/Dashboard/PatientDashboard';
+import AdminDashBoard from '../pages/DashBoard/AdminDashBoard';
+import DoctorDashBoard from '../pages/DashBoard/DoctorDashBoard';
+import PharmacistDashBoard from '../pages/DashBoard/PharmacistDashBoard';
+import ReceptionistDashBoard from '../pages/DashBoard/ReceptionistDashBoard';
+import PatientDashBoard from '../pages/DashBoard/PatientDashBoard';
 
 // Other Pages
 import NotFound from '../pages/NotFound';
@@ -69,7 +69,7 @@ const AppRoutes = () => {
       {/* Protected Dashboard Routes */}
       <Route element={
         <ProtectedRoute>
-          <DashboardLayout />
+          <DashBoardLayout />
         </ProtectedRoute>
       }>
         {/* Redirect /dashboard to role-specific dashboard */}
@@ -83,7 +83,7 @@ const AppRoutes = () => {
           path="/dashboard/admin"
           element={
             <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
-              <AdminDashboard />
+              <AdminDashBoard />
             </ProtectedRoute>
           }
         />
@@ -91,34 +91,34 @@ const AppRoutes = () => {
           path="/dashboard/doctor"
           element={
             <ProtectedRoute allowedRoles={[USER_ROLES.DOCTOR]}>
-              <DoctorDashboard />
+              <DoctorDashBoard />
             </ProtectedRoute>
           }
         />
-        {/* <Route
+        <Route
           path="/dashboard/pharmacist"
           element={
             <ProtectedRoute allowedRoles={[USER_ROLES.PHARMACIST]}>
-              <PharmacistDashboard />
+              <PharmacistDashBoard />
             </ProtectedRoute>
           }
-        /> */}
-        {/* <Route
+        />
+        <Route
           path="/dashboard/receptionist"
           element={
             <ProtectedRoute allowedRoles={[USER_ROLES.RECEPTIONIST]}>
-              <ReceptionistDashboard />
+              <ReceptionistDashBoard />
             </ProtectedRoute>
           }
-        /> */}
-        {/* <Route
+        />
+        <Route
           path="/dashboard/patient"
           element={
             <ProtectedRoute allowedRoles={[USER_ROLES.PATIENT]}>
-              <PatientDashboard />
+              <PatientDashBoard />
             </ProtectedRoute>
           }
-        /> */}
+        />
       </Route>
 
       {/* Home redirect */}

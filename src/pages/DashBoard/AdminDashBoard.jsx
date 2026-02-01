@@ -43,7 +43,8 @@ const StatCard = ({ title, value, icon, color }) => (
   </Card>
 );
 
-const AdminDashboard = () => {
+// ✅ FIXED — was AdminDashboard, now AdminDashBoard
+const AdminDashBoard = () => {
   const dispatch = useDispatch();
   const users = useSelector(selectAllUsers);
   const loading = useSelector(selectUsersLoading);
@@ -113,4 +114,5 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+// ✅ FIXED — was AdminDashboard, now AdminDashBoard
+export default AdminDashBoard;
